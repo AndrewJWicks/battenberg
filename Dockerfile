@@ -1,24 +1,28 @@
-FROM ubuntu:16.04
+FROM ubuntu:22.04
 
 USER root
 
 # Add dependencies
 RUN apt-get update && apt-get install -y \
-    libxml2 \
-    libxml2-dev \
+    build-essential \
     libcurl4-openssl-dev \
-    r-cran-rgl \
-    git \
     libssl-dev \
+    libxml2-dev \
+    libgit2-dev \
+    libssh2-1-dev \
+    zlib1g-dev \
+    git \
     curl \
-    build-essential
+    libxml2 \
+    r-base \
+    wget \
+    ca-certificates
 
-# ENV fix for R library path
 ENV R_LIBS_USER=/usr/local/lib/R/site-library
 
 RUN mkdir /tmp/downloads
 
-RUN curl -sSL -o tmp.tar.gz --retry 10 https://github.com/samtools/htslib/archive/1.7.tar.gz && \
+RUN wget -O tmp.tar.gz --tries=10 https://github.com/samtools/htslib/archive/1.7.tar.gz && \
     mkdir /tmp/downloads/htslib && \
     tar -C /tmp/downloads/htslib --strip-components 1 -zxf tmp.tar.gz && \
     make -C /tmp/downloads/htslib && \
@@ -26,7 +30,7 @@ RUN curl -sSL -o tmp.tar.gz --retry 10 https://github.com/samtools/htslib/archiv
 
 ENV HTSLIB=/tmp/downloads/htslib
 
-RUN curl -sSL -o tmp.tar.gz --retry 10 https://github.com/cancerit/alleleCount/archive/v4.0.0.tar.gz && \
+RUN wget -O tmp.tar.gz --tries=10 https://github.com/cancerit/alleleCount/archive/v4.0.0.tar.gz && \
     mkdir /tmp/downloads/alleleCount && \
     tar -C /tmp/downloads/alleleCount --strip-components 1 -zxf tmp.tar.gz && \
     cd /tmp/downloads/alleleCount/c && \
@@ -36,15 +40,13 @@ RUN curl -sSL -o tmp.tar.gz --retry 10 https://github.com/cancerit/alleleCount/a
     cd /tmp/downloads && \
     rm -rf /tmp/downloads/alleleCount /tmp/downloads/tmp.tar.gz
 
-RUN curl -sSL -o tmp.tar.gz --retry 10 https://mathgen.stats.ox.ac.uk/impute/impute_v2.3.2_x86_64_static.tgz && \
+RUN wget -O tmp.tar.gz --tries=10 https://mathgen.stats.ox.ac.uk/impute/impute_v2.3.2_x86_64_static.tgz && \
     mkdir /tmp/downloads/impute2 && \
     tar -C /tmp/downloads/impute2 --strip-components 1 -zxf tmp.tar.gz && \
     cp /tmp/downloads/impute2/impute2 /usr/local/bin && \
     rm -rf /tmp/downloads/impute2 /tmp/downloads/tmp.tar.gz
 
-# R and package install -- single RUN for persistence
-RUN apt-get update && apt-get install -y r-base
-
+# Install all R packages (including devtools & ASCAT) in one RUN
 RUN R -q -e 'install.packages("BiocManager", repos="https://cloud.r-project.org/"); \
     BiocManager::install(c("gtools", "optparse", "devtools", "RColorBrewer", "ggplot2", "gridExtra", "readr", "doParallel", "foreach", "splines"), ask=FALSE, update=TRUE); \
     devtools::install_github("Crick-CancerGenomics/ascat/ASCAT")'
@@ -64,11 +66,6 @@ RUN cat /opt/battenberg/inst/example/battenberg_wgs.R | \
 
 RUN cp /opt/battenberg/inst/example/filter_sv_brass.R /usr/local/bin/filter_sv_brass.R
 RUN cp /opt/battenberg/inst/example/battenberg_cleanup.sh /usr/local/bin/battenberg_cleanup.sh
-
-#RUN cat /opt/battenberg/inst/example/battenberg_snp6.R | \
-#    sed 's|IMPUTEINFOFILE = \".*|IMPUTEINFOFILE = \"/opt/battenberg_reference/1000genomes_2012_v3_impute/impute_info.txt\"|' | \
-#    sed 's|G1000PREFIX = \".*|G1000PREFIX = \"/opt/battenberg_reference/1000genomes_2012_v3_loci/1000genomesAlleles2012_chr\"|' | \
-#    sed 's|SNP6_REF_INFO_FILE = \".*|SNP6_REF_INFO_FILE = \"/opt/battenberg_reference/battenberg_snp6/snp6_ref_info_file.txt\"|' > /usr/local/bin/battenberg_snp6.R
 
 ## USER CONFIGURATION
 RUN adduser --disabled-password --gecos '' ubuntu && chsh -s /bin/bash ubuntu && mkdir -p /home/ubuntu
