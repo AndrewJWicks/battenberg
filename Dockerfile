@@ -13,6 +13,15 @@ RUN apt-get update && apt-get install -y \
     libgit2-dev \
     libssh2-1-dev \
     zlib1g-dev \
+    libfontconfig1-dev \
+    libfreetype6-dev \
+    libpng-dev \
+    libtiff5-dev \
+    libjpeg-dev \
+    libharfbuzz-dev \
+    libfribidi-dev \
+    libcairo2-dev \
+    libicu-dev \
     git \
     curl \
     libxml2 \
