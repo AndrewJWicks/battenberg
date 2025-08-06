@@ -5,6 +5,14 @@ USER root
 # Add dependencies
 RUN apt-get update && apt-get install -y libxml2 libxml2-dev libcurl4-gnutls-dev r-cran-rgl git libssl-dev curl
 
+# Install build tools and dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libcurl4-openssl-dev \
+    libssl-dev \
+    libxml2-dev \
+    git
+
 RUN mkdir /tmp/downloads
 
 RUN curl -sSL -o tmp.tar.gz --retry 10 https://github.com/samtools/htslib/archive/1.7.tar.gz && \
