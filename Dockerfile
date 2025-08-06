@@ -3,15 +3,20 @@ FROM ubuntu:16.04
 USER root
 
 # Add dependencies
-RUN apt-get update && apt-get install -y libxml2 libxml2-dev libcurl4-gnutls-dev r-cran-rgl git libssl-dev curl
-
-# Install build tools and dependencies
 RUN apt-get update && apt-get install -y \
+    libxml2 \
+    libxml2-dev \
+    libcurl4-gnutls-dev \
+    r-cran-rgl \
+    git \
+    libssl-dev \
+    curl \
     build-essential \
     libcurl4-openssl-dev \
-    libssl-dev \
-    libxml2-dev \
-    git
+    libxml2-dev
+
+# ENV fix for R library path
+ENV R_LIBS_USER=/usr/local/lib/R/site-library
 
 RUN mkdir /tmp/downloads
 
@@ -21,7 +26,7 @@ RUN curl -sSL -o tmp.tar.gz --retry 10 https://github.com/samtools/htslib/archiv
     make -C /tmp/downloads/htslib && \
     rm -f /tmp/downloads/tmp.tar.gz
 
-ENV HTSLIB /tmp/downloads/htslib
+ENV HTSLIB=/tmp/downloads/htslib
 
 RUN curl -sSL -o tmp.tar.gz --retry 10 https://github.com/cancerit/alleleCount/archive/v4.0.0.tar.gz && \
     mkdir /tmp/downloads/alleleCount && \
@@ -39,8 +44,12 @@ RUN curl -sSL -o tmp.tar.gz --retry 10 https://mathgen.stats.ox.ac.uk/impute/imp
     cp /tmp/downloads/impute2/impute2 /usr/local/bin && \
     rm -rf /tmp/downloads/impute2 /tmp/downloads/tmp.tar.gz
 
-RUN R -q -e 'install.packages("BiocManager", repos="https://cloud.r-project.org/"); BiocManager::install(c("gtools", "optparse", "devtools","RColorBrewer","ggplot2","gridExtra","readr","doParallel","foreach", "splines"), ask=FALSE, update=TRUE)'
-RUN R -q -e 'devtools::install_github("Crick-CancerGenomics/ascat/ASCAT")'
+# R and package install -- single RUN for persistence
+RUN apt-get update && apt-get install -y r-base
+
+RUN R -q -e 'install.packages("BiocManager", repos="https://cloud.r-project.org/"); \
+    BiocManager::install(c("gtools", "optparse", "devtools", "RColorBrewer", "ggplot2", "gridExtra", "readr", "doParallel", "foreach", "splines"), ask=FALSE, update=TRUE); \
+    devtools::install_github("Crick-CancerGenomics/ascat/ASCAT")'
 
 RUN mkdir -p /opt/battenberg
 COPY . /opt/battenberg/
@@ -64,7 +73,7 @@ RUN cp /opt/battenberg/inst/example/battenberg_cleanup.sh /usr/local/bin/battenb
 #    sed 's|SNP6_REF_INFO_FILE = \".*|SNP6_REF_INFO_FILE = \"/opt/battenberg_reference/battenberg_snp6/snp6_ref_info_file.txt\"|' > /usr/local/bin/battenberg_snp6.R
 
 ## USER CONFIGURATION
-RUN adduser --disabled-password --gecos '' ubuntu && chsh -s /bin/bash && mkdir -p /home/ubuntu
+RUN adduser --disabled-password --gecos '' ubuntu && chsh -s /bin/bash ubuntu && mkdir -p /home/ubuntu
 
 USER    ubuntu
 WORKDIR /home/ubuntu
