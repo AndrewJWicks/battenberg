@@ -6,14 +6,12 @@ USER root
 RUN apt-get update && apt-get install -y \
     libxml2 \
     libxml2-dev \
-    libcurl4-gnutls-dev \
+    libcurl4-openssl-dev \
     r-cran-rgl \
     git \
     libssl-dev \
     curl \
-    build-essential \
-    libcurl4-openssl-dev \
-    libxml2-dev
+    build-essential
 
 # ENV fix for R library path
 ENV R_LIBS_USER=/usr/local/lib/R/site-library
